@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using Google.Apis.Auth.OAuth2.Requests;
+using OAuthServer.V2.Core.DTOs.RefreshToken;
 
 namespace OAuthServer.V2.Service.Validations;
 

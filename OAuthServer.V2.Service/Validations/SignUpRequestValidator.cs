@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using OAuthServer.V2.Core.DTOs.User;
 
 namespace OAuthServer.V2.Service.Validations;
 
@@ -16,8 +17,6 @@ public class SignUpRequestValidator : AbstractValidator<SignUpRequest>
 
     public SignUpRequestValidator()
     {
-        // NativeLanguageId Validation
-        RuleFor(x => x.NativeLanguageId)
-            .GreaterThan(0).WithMessage("NativeLanguageId 0’dan büyük olmalıdır.");
+        
     }
 }
