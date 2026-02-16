@@ -1,0 +1,8 @@
+﻿namespace OAuthServer.V2.Core.UnitOfWork;
+
+// OUR PURPOSE IS TO PERFORM DATABASE OPERATIONS THROUGH A SINGLE TRANSACTION.
+public interface IUnitOfWork
+{
+    // TASK ASYNCHRONOUS OPERATIONS CORRESPOND TO VOID.
+    Task<int> CommitAsync();
+}
