@@ -10,10 +10,12 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
-        services.AddScoped<IAuthenticationService, AuthenticationService >();
+        services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IFileStorageHelper, FileStorageHelper>();
+        services.AddScoped<IAccountService, AccountService>();
+        services.AddScoped<IGoogleAuthService, GoogleAuthService>();
         services.AddScoped(typeof(IServiceGeneric<,>), typeof(ServiceGeneric<,>));
 
         // MAPSTER

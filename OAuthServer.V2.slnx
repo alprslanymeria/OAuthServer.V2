@@ -2,5 +2,6 @@
   <Project Path="OAuthServer.V2.API/OAuthServer.V2.API.csproj" />
   <Project Path="OAuthServer.V2.Core/OAuthServer.V2.Core.csproj" />
   <Project Path="OAuthServer.V2.Data/OAuthServer.V2.Data.csproj" />
+  <Project Path="OAuthServer.V2.Infrastructure/OAuthServer.V2.Infrastructure.csproj" />
   <Project Path="OAuthServer.V2.Service/OAuthServer.V2.Service.csproj" />
 </Solution>

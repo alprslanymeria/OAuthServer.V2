@@ -6,17 +6,16 @@ using OAuthServer.V2.Core.Configuration;
 using OAuthServer.V2.Core.DTOs.Client;
 using OAuthServer.V2.Core.DTOs.RefreshToken;
 using OAuthServer.V2.Core.DTOs.User;
+using OAuthServer.V2.Core.Exceptions;
 using OAuthServer.V2.Core.Models;
 using OAuthServer.V2.Core.Repositories;
 using OAuthServer.V2.Core.Services;
 using OAuthServer.V2.Core.UnitOfWork;
-using System.Net;
 
 namespace OAuthServer.V2.Service.Services;
 
 public class AuthenticationService(
 
-    //IOptions<List<Client>> optionsClient,
     UserManager<User> userManager,
     ITokenService tokenService,
     IUnitOfWork unitOfWork,
@@ -31,87 +30,40 @@ public class AuthenticationService(
 
     public async Task<ServiceResult<TokenResponse>> CreateTokenAsync(SignInRequest request)
     {
-        // CHECK SIGNIN DTO
         ArgumentNullException.ThrowIfNull(request);
 
-        User? user = null;
-         
-        // GET USER BY SWITCH CASE BASED ON EMAIL OR USERNAME OR PHONENUMBER
-        switch(request)
+        // FIND USER BY IDENTIFIER
+        var user = request switch
         {
-            case { Email: not null }:
-                user = await _userManager.FindByEmailAsync(request.Email);
-                break;
-            case { UserName: not null }:
-                user = await _userManager.FindByNameAsync(request.UserName);
-                break;
-            case { PhoneNumber: not null }:
-                user = await _userManager.Users.Where(u => u.PhoneNumber == request.PhoneNumber).SingleOrDefaultAsync();
-                break;
-            default:
-                return ServiceResult<TokenResponse>.Fail("Invalid sign-in request. Please provide either email, username, or phone number.", HttpStatusCode.BadRequest);
-        }
+            { Email: not null } => await _userManager.FindByEmailAsync(request.Email),
+            { UserName: not null } => await _userManager.FindByNameAsync(request.UserName),
+            { PhoneNumber: not null } => await _userManager.Users.Where(u => u.PhoneNumber == request.PhoneNumber).SingleOrDefaultAsync(),
+            _ => throw new BusinessException("Please provide either email, username, or phone number.")
+        };
 
-        // CHEK USER
-        if (user is null)
-        {
-            return ServiceResult<TokenResponse>.Fail("Invalid credentials");
-        }
+        if (user is null) throw new UnauthorizedException("Invalid credentials.");
+        if (!user.IsActive) throw new ForbiddenException("Account is deactivated. Please contact support.");
+        if (!user.EmailConfirmed && !user.PhoneNumberConfirmed) throw new ForbiddenException("Account is not verified. Please verify your email or phone number.");
 
-        // GET PASSWORD
+        // VALIDATE PASSWORD
         var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
 
-        if (!passwordValid)
-        {
-            return ServiceResult<TokenResponse>.Fail("Invalid credentials");
-        }
+        if (!passwordValid) throw new UnauthorizedException("Invalid credentials.");
 
-        // CREATE TOKEN
+        // CREATE TOKEN AND SAVE REFRESH TOKEN
         var token = _tokenService.CreateToken(user);
-
-        // CHECK REFRESH TOKEN
-        var userRefreshToken = await _userRefreshTokenRepository.Where(x => x.UserId == user.Id).SingleOrDefaultAsync();
-
-        if (userRefreshToken is null)
-        {
-            await _userRefreshTokenRepository.AddAsync(new UserRefreshToken
-            {
-                UserId = user.Id,
-                Code = token.RefreshToken,
-                Expiration = token.RefreshTokenExpiration
-            });
-        }
-        else
-        {
-            userRefreshToken.Code = token.RefreshToken;
-            userRefreshToken.Expiration = token.RefreshTokenExpiration;
-
-            _userRefreshTokenRepository.Update(userRefreshToken);
-        }
-
-        await _unitOfWork.CommitAsync();
+        await SaveOrUpdateRefreshTokenAsync(user.Id, token);
 
         return ServiceResult<TokenResponse>.Success(token);
-
     }
 
     public async Task<ServiceResult<TokenResponse>> CreateTokenByRefreshToken(string refreshToken)
     {
-        // CHECK REFRESH TOKEN
-        var existRefreshToken = await _userRefreshTokenRepository.Where(x => x.Code == refreshToken).SingleOrDefaultAsync();
+        var existRefreshToken = await _userRefreshTokenRepository.Where(x => x.Code == refreshToken).SingleOrDefaultAsync()
+            ?? throw new NotFoundException("Refresh token not found.");
 
-        if (existRefreshToken is null)
-        {
-            return ServiceResult<TokenResponse>.Fail("Refresh token not found", HttpStatusCode.NotFound);
-        }
-
-        // CHECK USER
-        var user = await _userManager.FindByIdAsync(existRefreshToken.UserId);
-
-        if (user is null)
-        {
-            return ServiceResult<TokenResponse>.Fail("User Id not found", HttpStatusCode.NotFound);
-        }
+        var user = await _userManager.FindByIdAsync(existRefreshToken.UserId)
+            ?? throw new NotFoundException("User not found.");
 
         // CREATE TOKEN
         var token = _tokenService.CreateToken(user);
@@ -123,8 +75,6 @@ public class AuthenticationService(
         // SINCE THE DATA RETURNED WITH THE WHERE CONDITION WAS MARKED AS "NO TRACKING" I CALLED IT USING THE UPDATE METHOD TO ENABLE TRACKING.
         // OTHERWISE, THE CHANGES WON'T BE REFLECTED IN THE DATABASE WHEN CALLING COMMIT ASYNC.
         _userRefreshTokenRepository.Update(existRefreshToken);
-
-        // UPDATE DATABASE
         await _unitOfWork.CommitAsync();
 
         return ServiceResult<TokenResponse>.Success(token);
@@ -132,15 +82,10 @@ public class AuthenticationService(
 
     public async Task<ServiceResult> RevokeRefreshToken(string refreshToken)
     {
-        var existRefreshToken = await _userRefreshTokenRepository.Where(x => x.Code == refreshToken).SingleOrDefaultAsync();
-
-        if (existRefreshToken is null)
-        {
-            return ServiceResult.Fail("Refresh token not found", HttpStatusCode.NotFound);
-        }
+        var existRefreshToken = await _userRefreshTokenRepository.Where(x => x.Code == refreshToken).SingleOrDefaultAsync()
+            ?? throw new NotFoundException("Refresh token not found.");
 
         _userRefreshTokenRepository.Delete(existRefreshToken);
-
         await _unitOfWork.CommitAsync();
 
         return ServiceResult.Success();
@@ -148,12 +93,8 @@ public class AuthenticationService(
 
     public async Task<ServiceResult<ClientTokenResponse>> CreateTokenByClient(ClientSignInRequest request)
     {
-        var client = _clients.SingleOrDefault(x => x.Id == request.ClientId && x.Secret == request.ClientSecret);
-
-        if (client is null)
-        {
-            return ServiceResult<ClientTokenResponse>.Fail("ClientId or ClientSecret not found", HttpStatusCode.NotFound);
-        }
+        var client = _clients.SingleOrDefault(x => x.Id == request.ClientId && x.Secret == request.ClientSecret)
+            ?? throw new NotFoundException("Client not found.");
 
         var token = _tokenService.CreateTokenByClient(client);
 
@@ -162,15 +103,15 @@ public class AuthenticationService(
 
     public async Task<ServiceResult<TokenResponse>> CreateTokenByExternalLogin(string email, string? name, string googleSubjectId, string? picture)
     {
-        // FIND USER BY EMAIL
         var user = await _userManager.FindByEmailAsync(email);
 
         if (user is null)
         {
-            // CREATE USER IF NOT FOUND
             user = new User
             {
                 UserName = name ?? email.Split('@')[0],
+                FirstName = name ?? "Google User",
+                BirthDate = DateTime.UtcNow,
                 Email = email,
                 EmailConfirmed = true,
                 Image = picture
@@ -182,8 +123,7 @@ public class AuthenticationService(
 
             if (!createResult.Succeeded)
             {
-                var errors = createResult.Errors.Select(e => e.Description).ToList();
-                return ServiceResult<TokenResponse>.Fail(errors, HttpStatusCode.BadRequest);
+                throw new BusinessException(createResult.Errors.Select(e => e.Description).ToList());
             }
 
             // ADD GOOGLE LOGIN PROVIDER
@@ -191,17 +131,24 @@ public class AuthenticationService(
             await _userManager.AddLoginAsync(user, loginInfo);
         }
 
-        // CREATE TOKEN
+        // CREATE TOKEN AND SAVE REFRESH TOKEN
         var token = _tokenService.CreateToken(user);
+        await SaveOrUpdateRefreshTokenAsync(user.Id, token);
 
-        //  SAVE REFRESH TOKEN
-        var userRefreshToken = await _userRefreshTokenRepository.Where(x => x.UserId == user.Id).SingleOrDefaultAsync();
+        return ServiceResult<TokenResponse>.Success(token);
+    }
+
+    #region HELPERS
+
+    private async Task SaveOrUpdateRefreshTokenAsync(string userId, TokenResponse token)
+    {
+        var userRefreshToken = await _userRefreshTokenRepository.Where(x => x.UserId == userId).SingleOrDefaultAsync();
 
         if (userRefreshToken is null)
         {
             await _userRefreshTokenRepository.AddAsync(new UserRefreshToken
             {
-                UserId = user.Id,
+                UserId = userId,
                 Code = token.RefreshToken,
                 Expiration = token.RefreshTokenExpiration
             });
@@ -210,10 +157,11 @@ public class AuthenticationService(
         {
             userRefreshToken.Code = token.RefreshToken;
             userRefreshToken.Expiration = token.RefreshTokenExpiration;
+            _userRefreshTokenRepository.Update(userRefreshToken);
         }
 
         await _unitOfWork.CommitAsync();
-
-        return ServiceResult<TokenResponse>.Success(token);
     }
+
+    #endregion
 }

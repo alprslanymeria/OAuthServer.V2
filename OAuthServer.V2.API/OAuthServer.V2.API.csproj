@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OAuthServer.V2.Infrastructure\OAuthServer.V2.Infrastructure.csproj" />
     <ProjectReference Include="..\OAuthServer.V2.Service\OAuthServer.V2.Service.csproj" />
   </ItemGroup>
 

@@ -1,5 +1,6 @@
 ﻿using OAuthServer.V2.Core.Common;
 using OAuthServer.V2.Core.DTOs.User;
+using OAuthServer.V2.Core.DTOs.Verification;
 
 namespace OAuthServer.V2.Core.Services;
 
@@ -10,4 +11,6 @@ public interface IUserService
     // THE DATA RETURNED FROM THE METHODS CAN BE USED IN THE SERVICE OR PRESENTATION (API) LAYER.
 
     Task<ServiceResult<UserDto>> CreateUserAsync(SignUpRequest request);
+    Task<ServiceResult> SendVerificationCodeAsync(SendVerificationCodeRequest request);
+    Task<ServiceResult> VerifySignUpAsync(VerifySignUpRequest request);
 }

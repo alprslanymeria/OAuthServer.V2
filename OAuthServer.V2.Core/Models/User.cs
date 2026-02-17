@@ -8,4 +8,5 @@ public class User : IdentityUser
     public string? Image { get; set; }
     public DateTime BirthDate { get; set; }
     public string Locale { get; set; } = null!;
+    public bool IsActive { get; set; } = true;
 }

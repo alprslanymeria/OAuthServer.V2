@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using OAuthServer.V2.Core.DTOs.Client;
 using OAuthServer.V2.Core.DTOs.RefreshToken;
 using OAuthServer.V2.Core.DTOs.User;
-using System.Security.Claims;
-using System.Web;
+using OAuthServer.V2.Core.Exceptions;
+using OAuthServer.V2.Core.Services;
 
 namespace OAuthServer.V2.API.Controllers;
 
@@ -13,15 +13,15 @@ namespace OAuthServer.V2.API.Controllers;
 // "api/[controller]/[action]"  => ACTION METHOD NAME MATCHING         => USE IN COMPLEX STRUCTURES.
 
 
-[Route("api/[controller]")]
+[Route("api/[controller]/[action]")]
 [ApiController]
 public class AuthController(
 
     Core.Services.IAuthenticationService authenticationService,
-    IConfiguration configuration) : BaseController
+    IGoogleAuthService googleAuthService) : BaseController
 {
     private readonly Core.Services.IAuthenticationService _authenticationService = authenticationService;
-    private readonly IConfiguration _configuration = configuration;
+    private readonly IGoogleAuthService _googleAuthService = googleAuthService;
 
     [HttpPost]
     public async Task<IActionResult> CreateToken(SignInRequest request)
@@ -42,21 +42,9 @@ public class AuthController(
     [HttpGet]
     public IActionResult GoogleLogin([FromQuery] string redirect_uri)
     {
-        if (string.IsNullOrWhiteSpace(redirect_uri))
-        {
-            return BadRequest("redirect_uri is required.");
-        }
+        // BUSINESS VALIDATION DELEGATED TO SERVICE - THROWS ON INVALID
+        _googleAuthService.ValidateRedirectUri(redirect_uri);
 
-        var allowedUris = _configuration.GetSection("AllowedRedirectUris").Get<string[]>() ?? [];
-        var isAllowed = allowedUris.Any(allowed =>
-            redirect_uri.StartsWith(allowed, StringComparison.OrdinalIgnoreCase));
-
-        if (!isAllowed)
-        {
-            return BadRequest("Invalid redirect_uri.");
-        }
-
-        // DEFINE REDIRECT URI
         var properties = new AuthenticationProperties
         {
             RedirectUri = Url.Action(nameof(GoogleCallback))
@@ -68,55 +56,37 @@ public class AuthController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> GoogleCallback()
+    public async Task<IActionResult> GoogleCallback([FromQuery] string? error = null)
     {
-        // READ GOOGLE USER INFO FROM EXTERNAL COOKIE
+        if (!string.IsNullOrEmpty(error))
+        {
+            throw new BusinessException($"Google authentication error: {error}");
+        }
+
+        // ASP.NET CORE SPECIFIC OPERATIONS - MUST STAY IN CONTROLLER
         var result = await HttpContext.AuthenticateAsync("ExternalCookie");
 
         if (!result.Succeeded || result.Principal is null)
         {
-            return Unauthorized();
+            throw new UnauthorizedException("External authentication failed.");
         }
 
-        // PULL USER INFO FROM CLAIMS
-        var email = result.Principal.FindFirstValue(ClaimTypes.Email);
-        //var name = result.Principal.FindFirstValue(ClaimTypes.Name);
-        var name = "Test";
-        var googleSubjectId = result.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
-        var picture = result.Principal.FindFirst("picture")?.Value;
+        // EXTRACT USER INFO - BUSINESS LOGIC IN SERVICE
+        var userInfo = _googleAuthService.ExtractUserInfo(result.Principal);
 
-        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(googleSubjectId))
-        {
-            return BadRequest("Google'dan email veya kullanıcı bilgisi alınamadı.");
-        }
-
-        // DELETE THE TEMPORARY EXTERNAL COOKIE
+        // CLEAN UP EXTERNAL COOKIE
         await HttpContext.SignOutAsync("ExternalCookie");
 
-        // CREATE TOKEN
-        var tokenResponse = await _authenticationService.CreateTokenByExternalLogin(email, name, googleSubjectId, picture);
+        // CREATE TOKEN - BUSINESS LOGIC IN SERVICE
+        var tokenResponse = await _authenticationService.CreateTokenByExternalLogin(
+            userInfo.Email, userInfo.Name, userInfo.GoogleSubjectId, userInfo.Picture);
 
-        if (tokenResponse.IsFail)
-        {
-            return ActionResultInstance(tokenResponse);
-        }
-
-        // REDIRECT BACK TO CLIENT APPLICATION WITH TOKENS
+        // REDIRECT WITH TOKENS IF REDIRECT URI EXISTS
         if (result.Properties?.Items.TryGetValue("redirect_uri", out var redirectUri) == true && !string.IsNullOrEmpty(redirectUri))
         {
-            var token = tokenResponse.Data!;
-            var uriBuilder = new UriBuilder(redirectUri);
-            var query = HttpUtility.ParseQueryString(uriBuilder.Query);
-            query["access_token"] = token.AccessToken;
-            query["access_token_expiration"] = token.AccessTokenExpiration.ToString("o");
-            query["refresh_token"] = token.RefreshToken;
-            query["refresh_token_expiration"] = token.RefreshTokenExpiration.ToString("o");
-            uriBuilder.Query = query.ToString();
-
-            return Redirect(uriBuilder.ToString());
+            return Redirect(_googleAuthService.BuildTokenRedirectUrl(redirectUri, tokenResponse.Data!));
         }
 
         return ActionResultInstance(tokenResponse);
     }
-
 }
