@@ -1,11 +1,15 @@
-﻿using OAuthServer.V2.Core;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Builder;
+using OAuthServer.V2.Core;
 using OAuthServer.V2.Core.Configuration;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Microsoft.Extensions.Logging;
 
-namespace OAuthServer.V2.API.Extensions;
+namespace OAuthServer.V2.Infrastructure.OpenTelemetry;
 
 public static class OpenTelemetryExt
 {

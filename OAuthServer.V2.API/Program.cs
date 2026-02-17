@@ -7,6 +7,7 @@ using OAuthServer.V2.API.ModelBinding;
 using OAuthServer.V2.Core.Configuration;
 using OAuthServer.V2.Data;
 using OAuthServer.V2.Infrastructure;
+using OAuthServer.V2.Infrastructure.OpenTelemetry;
 using OAuthServer.V2.Service;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 
@@ -61,10 +62,8 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services
     .AddRepositories(builder.Configuration)
     .AddServices()
-    .AddInfrastructure()
-    .AddCustomTokenAuth(builder.Configuration)
-    .AddOpenTelemetryServicesExt(builder.Configuration)
-    .AddStorageServicesExt(builder.Configuration); ;
+    .AddInfrastructure(builder.Configuration)
+    .AddCustomTokenAuth(builder.Configuration);
 
 
 // FLUENT VALIDATION AUTO VALIDATION

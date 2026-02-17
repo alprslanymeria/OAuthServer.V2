@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options;
 using OAuthServer.V2.Core.Configuration.Storage;
 using OAuthServer.V2.Core.Services.Storage;
 
-namespace OAuthServer.V2.Service.Services.Storage;
+namespace OAuthServer.V2.Infrastructure.Storage;
 
 /// <summary>
 /// MAIN STORAGE SERVICE INTERFACE THAT DELEGATES TO THE CONFIGURED STORAGE PROVIDER
@@ -69,4 +69,3 @@ public class StorageService(
         GC.SuppressFinalize(this);
     }
 }
-

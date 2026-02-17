@@ -1,4 +1,4 @@
-﻿using Google;
+using Google;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.Options;
@@ -6,7 +6,7 @@ using OAuthServer.V2.Core.Configuration.Storage;
 using OAuthServer.V2.Core.Services.Storage;
 using System.Net;
 
-namespace OAuthServer.V2.Service.Services.Storage;
+namespace OAuthServer.V2.Infrastructure.Storage;
 
 /// <summary>
 /// GOOGLE CLOUD STORAGE PROVIDER IMPLEMENTATION
