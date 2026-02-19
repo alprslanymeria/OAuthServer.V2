@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace OAuthServer.V2.Core;
+namespace OAuthServer.V2.Infrastructure.OpenTelemetry;
 
 public static class ActivitySourceProvider
 {

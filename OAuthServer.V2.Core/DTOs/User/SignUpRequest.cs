@@ -9,6 +9,6 @@ public record SignUpRequest(
     string? PhoneNumber,
     DateTime BirthDate,
     string Password,
-    IFileUpload Image,
+    IFileUpload? Image,
     string? UserName
     );

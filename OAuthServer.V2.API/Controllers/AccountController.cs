@@ -103,7 +103,7 @@ public class AccountController(
 
     [Authorize]
     [HttpPut("profile")]
-    public async Task<IActionResult> UpdateProfile(UpdateProfileRequest request)
+    public async Task<IActionResult> UpdateProfile([FromForm] UpdateProfileRequest request)
     {
         var userId = GetUserId();
 

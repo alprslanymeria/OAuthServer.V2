@@ -56,10 +56,10 @@ public class TokenService(
         var claimList = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Sub, client.Id.ToString())
+            new(JwtRegisteredClaimNames.Sub, client.Id!.ToString())
         };
 
-        claimList.AddRange(client.Audiences.Select(x => new Claim(JwtRegisteredClaimNames.Aud, x)));
+        claimList.AddRange(client.Audiences!.Select(x => new Claim(JwtRegisteredClaimNames.Aud, x)));
 
         return claimList;
     }

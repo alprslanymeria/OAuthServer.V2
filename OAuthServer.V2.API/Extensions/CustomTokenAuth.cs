@@ -19,7 +19,7 @@ public static class CustomTokenAuth
 
         services.AddIdentity<User, IdentityRole>(opt =>
         {
-            opt.User.RequireUniqueEmail = true;
+            //opt.User.RequireUniqueEmail = true;
 
         }).AddIdentityEntityFrameworkStores().AddDefaultTokenProviders();
 

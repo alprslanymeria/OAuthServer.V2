@@ -15,6 +15,7 @@ public class UserService(
 
     UserManager<User> userManager,
     INotificationService notificationService,
+    IFileStorageHelper fileStorageHelper,
     IMapper mapper,
     ILogger<UserService> logger
 
@@ -22,6 +23,7 @@ public class UserService(
 {
     private readonly UserManager<User> _userManager = userManager;
     private readonly INotificationService _notificationService = notificationService;
+    private readonly IFileStorageHelper _fileStorageHelper = fileStorageHelper;
     private readonly IMapper _mapper = mapper;
     private readonly ILogger<UserService> _logger = logger;
 
@@ -42,8 +44,8 @@ public class UserService(
         var user = new User
         {
             FirstName = request.FirstName,
-            Email = request.Email,
             PhoneNumber = request.PhoneNumber,
+            Email = request.Email,
             BirthDate = request.BirthDate,
             UserName = request.UserName ?? request.Email?.Split('@')[0] ?? $"user_{Guid.NewGuid():N}"[..20]
         };
@@ -54,6 +56,16 @@ public class UserService(
         if (!result.Succeeded)
         {
             throw new BusinessException(result.Errors.Select(e => e.Description).ToList());
+        }
+
+        // UPLOAD USER IMAGE TO STORAGE IF PROVIDED
+        if (request.Image is not null)
+        {
+        
+            user.Image = await _fileStorageHelper.UploadFileToStorageAsync(request.Image, user.Id, "profile");
+            await _userManager.UpdateAsync(user);
+
+            _logger.LogInformation("UserService -> IMAGE UPLOADED FOR USER {UserId}: {ImageUrl}", user.Id, user.Image);
         }
 
         // SEND VERIFICATION CODE AUTOMATICALLY AFTER SIGNUP

@@ -6,7 +6,7 @@ using OAuthServer.V2.Service.Services;
 
 namespace OAuthServer.V2.Service;
 
-public static class ServiceExtensions
+public static class ServiceExt
 {
     public static IServiceCollection AddServices(this IServiceCollection services)
     {

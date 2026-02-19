@@ -14,7 +14,7 @@ public class UserController(
     private readonly IUserService _userService = userService;
 
     [HttpPost]
-    public async Task<IActionResult> CreateUser(SignUpRequest request)
+    public async Task<IActionResult> CreateUser([FromForm] SignUpRequest request)
         => ActionResultInstance(await _userService.CreateUserAsync(request));
 
     [HttpPost("verify")]

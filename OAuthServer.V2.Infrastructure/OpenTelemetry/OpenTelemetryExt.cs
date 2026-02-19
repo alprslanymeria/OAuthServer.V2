@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
-using OAuthServer.V2.Core;
 using OAuthServer.V2.Core.Configuration;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;

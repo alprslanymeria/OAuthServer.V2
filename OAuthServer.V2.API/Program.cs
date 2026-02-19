@@ -63,7 +63,8 @@ builder.Services
     .AddRepositories(builder.Configuration)
     .AddServices()
     .AddInfrastructure(builder.Configuration)
-    .AddCustomTokenAuth(builder.Configuration);
+    .AddCustomTokenAuth(builder.Configuration)
+    .AddOpenTelemetryServicesExt(builder.Configuration);
 
 
 // FLUENT VALIDATION AUTO VALIDATION

@@ -18,7 +18,9 @@ namespace OAuthServer.V2.API.Controllers;
 public class AuthController(
 
     Core.Services.IAuthenticationService authenticationService,
-    IGoogleAuthService googleAuthService) : BaseController
+    IGoogleAuthService googleAuthService
+    
+    ) : BaseController
 {
     private readonly Core.Services.IAuthenticationService _authenticationService = authenticationService;
     private readonly IGoogleAuthService _googleAuthService = googleAuthService;
