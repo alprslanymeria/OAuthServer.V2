@@ -66,6 +66,18 @@ builder.Services
     .AddCustomTokenAuth(builder.Configuration)
     .AddOpenTelemetryServicesExt(builder.Configuration);
 
+// DISTRIBUTED CACHE FOR FIDO2 OPTIONS STORAGE
+builder.Services.AddDistributedMemoryCache();
+
+// FIDO2 / PASSKEYS
+builder.Services.AddFido2(options =>
+{
+    options.ServerDomain = builder.Configuration["Fido2:ServerDomain"];
+    options.ServerName = builder.Configuration["Fido2:ServerName"];
+    options.Origins = builder.Configuration.GetSection("Fido2:Origins").Get<HashSet<string>>();
+    options.TimestampDriftTolerance = builder.Configuration.GetValue<int>("Fido2:TimestampDriftTolerance", 300000);
+});
+
 
 // FLUENT VALIDATION AUTO VALIDATION
 builder.Services.AddFluentValidationAutoValidation(cfg =>

@@ -7,6 +7,7 @@ using OAuthServer.V2.Core.Repositories;
 using OAuthServer.V2.Core.UnitOfWork;
 using OAuthServer.V2.Data.Repositories;
 
+
 namespace OAuthServer.V2.Data;
 
 // EXTENSION METHODS MUST BE STATIC, AND THE CLASS THAT CONTAINS THEM MUST ALSO BE STATIC.
@@ -30,6 +31,7 @@ public static class RepositoryExt
 
         services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+        services.AddScoped<IPasskeyCredentialRepository, PasskeyCredentialRepository>();
 
 
         return services;

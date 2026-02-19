@@ -17,6 +17,9 @@ public class GenericRepository<TEntity>(AppDbContext context) : IGenericReposito
     // WHEN ToListAsync() IS CALLED IN THE SERVICE LAYER, THEN IT WILL BE REFLECTED TO THE DATABASE.
     public IQueryable<TEntity> Where(Expression<Func<TEntity, bool>> predicate) => _dbSet.Where(predicate).AsNoTracking();
 
+    public async Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> predicate)
+        => await _dbSet.Where(predicate).AsNoTracking().SingleOrDefaultAsync();
+
     public async ValueTask<TEntity?> GetByIdAsync(int id)
     {
         var entity = await _dbSet.FindAsync(id);

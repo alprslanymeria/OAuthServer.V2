@@ -16,6 +16,7 @@ public static class ServiceExt
         services.AddScoped<IFileStorageHelper, FileStorageHelper>();
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+        services.AddScoped<IPasskeyService, PasskeyService>();
         services.AddScoped(typeof(IServiceGeneric<,>), typeof(ServiceGeneric<,>));
 
         // MAPSTER

@@ -19,6 +19,8 @@ public interface IGenericRepository<TEntity> where TEntity : class
 
     ValueTask<TEntity?> GetByIdAsync(int id);
 
+    Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> predicate);
+
     ValueTask AddAsync(TEntity entity);
 
     TEntity Update(TEntity entity);

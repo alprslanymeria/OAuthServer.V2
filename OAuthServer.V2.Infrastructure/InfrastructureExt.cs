@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OAuthServer.V2.Core.Configuration.Storage;
 using OAuthServer.V2.Core.Services;
 using OAuthServer.V2.Core.Services.Storage;
+using OAuthServer.V2.Infrastructure.Cache;
 using OAuthServer.V2.Infrastructure.Notifications;
 using OAuthServer.V2.Infrastructure.OpenTelemetry;
 using OAuthServer.V2.Infrastructure.Storage;
@@ -15,8 +16,16 @@ public static class InfrastructureExtensions
     {
         services
             .AddNotificationServices()
+            .AddCacheServices()
             .AddOpenTelemetryServicesExt(configuration)
             .AddStorageServices(configuration);
+
+        return services;
+    }
+
+    private static IServiceCollection AddCacheServices(this IServiceCollection services)
+    {
+        services.AddScoped<ICacheService, CacheService>();
 
         return services;
     }

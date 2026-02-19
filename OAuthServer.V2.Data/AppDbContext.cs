@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
 
     // DB SETS
     public DbSet<UserRefreshToken> UserRefreshToken { get; set; }
+    public DbSet<UserPasskeyCredential> UserPasskeyCredential { get; set; }
 
     // OVERRIDE ON MODEL CREATING
     protected override void OnModelCreating(ModelBuilder builder)
