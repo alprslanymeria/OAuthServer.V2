@@ -71,9 +71,6 @@ public static class OpenTelemetryExt
                     // FOR SEE EXCEPTION DETAILS IN TRACE TAG'S "otel.status_code" & "otel.status_description"
                     httpClientOptions.RecordException = true;
 
-
-                    httpClientOptions.FilterHttpRequestMessage = (request) => request.RequestUri!.AbsoluteUri.Contains("9200", StringComparison.InvariantCulture);
-
                     // ADD REQUEST BODY AS TAG TO ACTIVITY
                     httpClientOptions.EnrichWithHttpRequestMessage = async (activity, request) =>
                     {
@@ -103,11 +100,16 @@ public static class OpenTelemetryExt
             })
             .WithMetrics(options =>
             {
-                options.AddMeter("metric.meter.api");
+                options.AddMeter(openTelemetryConstants.ActivitySourceName);
                 options.ConfigureResource(resource =>
                 {
-                    resource.AddService("Metric.API", serviceVersion: "1.0.0");
+                    resource.AddService(openTelemetryConstants.ServiceName, serviceVersion: openTelemetryConstants.ServiceVersion);
                 });
+
+                // BUILT-IN METRIC INSTRUMENTATION
+                options.AddAspNetCoreInstrumentation();
+                options.AddHttpClientInstrumentation();
+                options.AddRuntimeInstrumentation();
 
                 // METRICS EXPORTERS FROM APPSETTINGS
                 ConfigureMetricsExporters(options, openTelemetryConstants);

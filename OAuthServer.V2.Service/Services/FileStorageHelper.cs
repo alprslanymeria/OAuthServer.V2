@@ -36,11 +36,7 @@ public class FileStorageHelper(
         try
         {
 
-            // EXTRACT FILE PATH FROM URL
-            // Remove domain and bucket name to get relative path
-            // https://storage.googleapis.com/digital-receipt-app/user/folder/file -> user/folder/file
-
-            var filePath = fileUrl.Replace("https://storage.googleapis.com/digital-receipt-app/", "");
+            var filePath = storageService.ExtractFilePath(fileUrl);
 
             var fileExists = await storageService.ExistsAsync(filePath);
 

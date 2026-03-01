@@ -46,6 +46,11 @@ public interface IStorageProvider : IDisposable
     string GetPublicUrl(string filePath);
 
     /// <summary>
+    /// EXTRACTS THE RELATIVE FILE PATH FROM A PUBLIC URL RETURNED BY <see cref="GetPublicUrl"/>
+    /// </summary>
+    string ExtractFilePath(string fileUrl);
+
+    /// <summary>
     /// GENERATES A SIGNED / TEMPORARY URL FOR ACCESSING A FILE (IF SUPPORTED)
     /// </summary>
     Task<string> GetSignedUrlAsync(string filePath, int expirationMinutes = 60, CancellationToken cancellationToken = default);

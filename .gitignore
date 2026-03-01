@@ -364,3 +364,15 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# GCP Service Account Key
+**/gcp-key.json
+
+# ENVIRONMENT FILES
+.env
+.env.*
+!.env.template
+
+# APPSETTING FILES
+**/appsettings.*.json
+!**/appsettings.Template.json

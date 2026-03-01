@@ -20,11 +20,9 @@ public class GoogleCloudStorageProvider : IStorageProvider
     private readonly GoogleCloudStorageOption _config;
     private bool _disposed;
 
-    public GoogleCloudStorageProvider(IOptions<GoogleCloudStorageOption> config)
+    public GoogleCloudStorageProvider(IOptions<GoogleCloudStorageOption> config, GoogleCredential credential)
     {
         _config = config.Value;
-
-        var credential = GoogleCredential.GetApplicationDefault();
 
         _storageClient = StorageClient.Create(credential);
 
@@ -103,6 +101,14 @@ public class GoogleCloudStorageProvider : IStorageProvider
     }
 
     public string GetPublicUrl(string filePath) => $"https://storage.googleapis.com/{_config.BucketName}/{filePath}";
+
+    public string ExtractFilePath(string fileUrl)
+    {
+        var baseUrl = $"https://storage.googleapis.com/{_config.BucketName}/";
+        return fileUrl.StartsWith(baseUrl, StringComparison.OrdinalIgnoreCase)
+            ? fileUrl[baseUrl.Length..]
+            : fileUrl;
+    }
 
     public async Task<string> GetSignedUrlAsync(string filePath, int expirationMinutes = 60, CancellationToken cancellationToken = default)
     {

@@ -1,0 +1,162 @@
+BEST PRACTICES
+___________________
+
+# Repository katmanında try-catch kullanılmaz.
+# DB'den alınan DATA aynen olduğu gibi Service katmanına aktarılır.
+# Presentation katmanında kesinlikle business logic kullanılmayacak.
+# EFC ile entity'ler attribute'lar ile değil konfigürasyon dosyaları ile configure edilir. (seperation of concerns)
+# appsettings içerisindeki alanlar OPTIONS Pattern ile birlikte tip güvenli şekilde okunur. Buna CONNECTION STRING DAHİL!!
+# Program.cs kirletilmemeli! mümkün olduğunca extension metotlar kullanılmalıdır.
+# statik ifadeler yerine sabitler kullanılması tercih edilmeli.
+# Generic repository kesinlikle şişirilmemelidir. Entity'lerin tümünün kullanabileceği metotları barındırmalıdır.
+  Bu durumda o entity için ayrı bir repository interface oluşturulur. O interface bu generic interface'i implement eder.
+# Bu oluşturulan repository'ler DI CONTAINER'A eklenirken REFLECTION'dan faydalanılır.
+# Repository'ler ve Business Logic'ler SCOPED OLUR. BUSINESS LOGIC'TE EĞER VERİTABANINA GİTMİYORSAN SINGLETON OLABİLİR.
+  VERİTABANI VAR İSE MUTLAKA SCOPED OLMALIDIR.
+# GenericRepository yapılabilir fakat GenericService yapmak sağlıklı değildir. Gerekirse her bir entity için  service dosyaları oluşturulur.
+# SERVICE KATMANLARI MUTLAKA DTO ALIRLR VE DTO DÖNERLER.
+# CLASS LIBRARY'LER ARASINDA TAŞINAN DATA'LAR MÜMKÜN OLDUĞUNDA IMMUTABLE OLMASINA ÖZEN GÖSTERMELİYİZ. YANİ NESNE ÖRNEĞİ
+  ALINAMAYACAK ŞEKİLDE.. ÇÜNKÜ BUNLAR REFERANS TİPLİ OLDUĞU İÇİN BİRÇOK YERİ ETKİLER.
+	# Bu yüzden DTO'ları class yerine RECORD olarak belirteceğiz. Çünkü iki class'ı karşılaştırırken referansları karşılaştırılır.
+	# Fakat iki record karşılaştırılınca property'leri karşılaştırılır.
+# Mapping işlemlerinde manuel mapping en hızlı işlemdir.
+# Geriye List bekleyen metotlarda data bulunamazsa null dönmek yerine boş liste dönmek best prctice'dir.
+# Controller'lar genel best practice olarak çoğul olmalıdır. ProductsController gibi..
+# ENDPOINT'LERDE ID ALIRKEN ŞU ŞEKİLDE ALMALIYIZ:
+	# [HttpGet("{id}")]
+	# [HttpGet("{pageNumber}/{pageSize}")]
+	# Bu şekilde route'da aldığımız data'ları sınırlamamız gerekli (Route Constraints). Örneğin integer beklediğimiz bir değer yerine string gelmemelidir.
+	# Eğer beklenen tipte değer gelmezse beklenen tipin default değerleri kabul edilir. O yüzden aşağıdaki gibi çağırmalıyız:
+		# [HttpGet("{id:int}")]
+		# [HttpGet("{pageNumber:int}/{pageSize:int}")]
+# Kısmi güncellemelerde PATCH metodu kullanılır.
+# Fluent Validation ile validation yaparken .NET'in default filter'ı kapatılmalıdır.
+# Custom filter'lar yazarak akışı kontrol edebiliriz.
+	# IActionFilter , IAsyncActionFilter --> Action metot çalışmadan önce çalışmasını istediğimiz filter'lar için
+# Repository'ler ENTITY alır ve geriye ENTITY dönerler.
+# Service metotları ise DTO alır DTO geri döner.
+# Bir DTO içerisinde entity açık açık referans verilmez.
+# Tüm mapping konfig'i bir dosyada yapılmayacak. Her bir entity'nin mapping'i ayrı dosyada olacak.
+# Status code 201 döndüğün zaman oluşturduğun item'a ait location bilgisini header içerisinde gönderebilirsin.
+# Mapper işlemi yaparken hali hazırda nesne yok ise generic olarak, var ise metot parametresi olarak verebiliriz.
+	# Generic --> var category = mapper.Map<Category>(request);
+	# Parameter --> category = mapper.Map(request , category)
+# Switch bloklarından delegate'ler yardımıyla kurtulabiliriz.
+# Controller içerisinde birden fazla POST veya PUT kullanacaksak bunları metot isimleri ilelbirbirinden ayırıyoruz.
+	# Route'da alacağımız parametreler ile,
+	# Parametre alınmayacaksa metot isimleri ile
+# Eğer route'da parametre almazsak data'lar query string ile birlikte gelir. Bunlar ile bir ayrım yapılamaz.
+# Eşleşmelerin metot ismi yerine metot tipi ile yapılması best practice'dir.
+# Status Code'ları
+	# 100 - 200 --> information
+	# 200 - 300 --> successfull
+	# 300 - 400 --> redirect
+	# 400 - 500 --> client error
+	# 500 > --> server error
+		# 500 hatası alan bir client retry mekanizmalarını devreye sokabilir.
+# Kullandığımız framework veya library'lerin ana class'ları mümkün olduğunca sade bırakılır. DbContext, program.cs gibi
+# Controller içerisinde private metot olmaz. Action metotlar mümkün olduğunca sade bırakılır.
+# Controller içerisinde mümkün olduğunca try-catch olmaz. Try-Catch'in olacağı tek yer bizim service katmanımızdır.
+# Exception'ları mutlaka global olarak ele almalıyız. Ayırca input veya business validation işlemleri sırasında hata 
+  oluştuğu zaman exception fırlatarak bu süreci durdurmamalıyız. Hatay uygun response model dönülmelidir.
+  # 3rd party library'ler gibi kod bizim kontrolümüzde değilse o zaman exception fırlatabiliriz.
+# Repository --> entity alır entity döner.
+# Service --> dto alır wrapper dto döner.
+# Category Based Structure --> Aynı türdeki dosyaların tek bir klasör çatısı altında toplanmasıdır. Mesela tüm controller'lar aynı yerde gibi
+# Functional Base Structur --> Birbiri ile ilişkil kodların hepsi bir arada bulunur.
+# Tekrar eden kod blokları için filter'lar kullanabiliriz. Akış aşağıdaki gibidir:
+	# Authorization Filter
+	# Resource Filter
+		# Model Binding Process
+	# Action Filter
+		# Action Execution Process
+	# Exception Filter
+	# Result Filter
+		# Result Execution
+# Filter'ımız parametre almıyorsa action metot üzerinde aşağıdaki gibi kullanırız:
+	# [LogFilter]
+# Filter'ımız parametre alıyorsa ve DIC'e kayıtlıysa action metot üzerinde ServiceFilter ile kullanırız:
+	# [ServiceFilter(typeof(NotFoundFilter<product, int>))]
+
+
+	# public interface IProductRepository : IGenericRepository<Product>
+		# Bu şekilde "Product" entity için özel repository interface oluşturduk.
+
+	# public class ProductRepository : IProductRepository
+		# Bu tanım hatalı çünkü sadece IProductRepository'i implement edersek biz IGenericRepository'nin metotlarını tekrar
+		  implement etmek durumunda kalırız. Halbuki biz sadece Product entity'e özgü yazmış olduğumuz metotları tanımlamak istiyoruz.
+
+	# public class ProductRepository(AppDbContext context) : GenericRepository<Product>(context) , IProductRepository
+		# Bu tanım doğrudur. Böylece ProductRepository ile hem generic metotlara hem de repository spesifik metotlara erişebileceğiz.
+
+# CTOR'LAR kalıtım yoluyla gelmez. Yani derived class, base class'ın Parametreli CTOR'unu kullanmak istiyorsa bunu açıkça 
+  belirtmelidir.
+
+	# public interface IProductService : IServiceGeneric<Product, ProductDto>
+		# Bu şekilde "Product" entity için özel service interface oluşturduk.
+
+	# public class ProductService : IProductService
+		# Bu tanım hatalı çünkü sadece IProductService'i implement edersek biz IServiceGeneric'in metotlarını tekrar
+		  implement etmek durumunda kalırız. Halbuki biz sadece Product entity'e özgü yazmış olduğumuz metotları tanımlamak istiyoruz.
+
+	# public class ProductService : ServiceGeneric<Product, ProductDto> , IProductService
+		# Bu tanım doğrudur. Burada ServiceGeneric'in CTOR'da aldıklarını ProductService'de alıp BASE CTOR'a aktarmayı unutma!
+
+
+
+GIT KOMUTLARI
+________________
+
+# git rm --cached path/to/file --> git'in github reposunda olmasını istemediğimiz dosyayı izlemesini bırakmak için.
+# git rm -r --cached path/to/folder --> git'in github reposunda olmasını istemediğimiz klasörü izlemesini bırakmak için.
+
+
+KULLANILAN LIBRARY'LER
+________________________
+
+# Entity Framework Core --> ORM Aracı olarak alternatif olarak Dapper kullanılabilir.
+# AutoMapper
+# Fluent Validation
+	# İlk önce DTO için "AbstractValidator<>" ı implement ederek kurallarımızı yazıyoruz.
+	# Daha sonra bu hataların kendi response model ile birlikte dönmesi için bir filter yazacağız.
+	# Ama bunun için FluentValidation'nın bu hataları önceden otomatik olarak fark etmesi gerekiyordu.
+	# Fakat FluentValidation.AspNetCore paketi deprecated olduğu için Fluent Validation'ın önerdiği paketi kullandım.
+		# https://github.com/SharpGrip/FluentValidation.AutoValidation
+	# Bunu DI'a eklerken cfg ile kendi filter'ımı belirttim. Filter'ımı github adresinde belirttiği gibi yazdım.
+	# services.AddFluentValidationAutoValidation(cfg =>
+		{
+			cfg.OverrideDefaultResultFactoryWith<FluentValidationFilter>();
+		});
+
+
+KULLANILAN PATTERN'LAR
+_______________________
+
+# Repository Pattern
+# Result Pattern
+# Fast Fail Code Style
+# Guard Clauses Code Style
+# Extension metotlar
+# Filter'lar
+# SaveChanges Interceptor --> Audit Record (Updated, Created) : SaveChangesInterceptor'ı miras alan class yazılır.
+# BaseEntity<TId>, IAuditEntity
+# CustomException'lar
+	# Exception sınıfını miras alarak custom exception'lar oluşturabiliriz.
+# Global Exception handler
+	# Uygulama;
+		# Başarılı durumlarda --> DTO geriye döner
+		# Validation hatalarında --> Filter ile halledildi
+		# Exception hataları için;
+			# Exception handler middleware before .NET 8
+			# IExceptionHandler interface after .NET 8
+			# Bu interface'in implement edilen handler'ların çalışabilmesi için Middleware'i kullanmamız gerek zaten.
+
+
+# DOCKER PUSH
+________________
+
+docker build -f OAuthServer.V2.API/Dockerfile -t alparslanorgnl/oauth:oauthserver-v2 .
+docker push alparslanorgnl/oauth:oauthserver-v2
+
+docker build -f OAuthServer.V2.API/Dockerfile --target migration -t alparslanorgnl/migration:oauthserver-v2-migration .
+docker push alparslanorgnl/migration:oauthserver-v2-migration

@@ -96,6 +96,9 @@ builder.Services.Configure<SmtpOption>(builder.Configuration.GetSection(SmtpOpti
 
 var app = builder.Build();
 
+// APPLY MIGRATIONS
+await app.ApplyMigrations();
+
 app.UseExceptionHandler(x => { });
 
 if (app.Environment.IsDevelopment())

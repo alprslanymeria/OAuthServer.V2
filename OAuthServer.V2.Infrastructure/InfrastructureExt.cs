@@ -1,11 +1,15 @@
+using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using OAuthServer.V2.Core.Configuration;
 using OAuthServer.V2.Core.Configuration.Storage;
 using OAuthServer.V2.Core.Services;
 using OAuthServer.V2.Core.Services.Storage;
 using OAuthServer.V2.Infrastructure.Cache;
 using OAuthServer.V2.Infrastructure.Notifications;
 using OAuthServer.V2.Infrastructure.OpenTelemetry;
+using OAuthServer.V2.Infrastructure.Security;
 using OAuthServer.V2.Infrastructure.Storage;
 
 namespace OAuthServer.V2.Infrastructure;
@@ -18,7 +22,25 @@ public static class InfrastructureExtensions
             .AddNotificationServices()
             .AddCacheServices()
             .AddOpenTelemetryServicesExt(configuration)
-            .AddStorageServices(configuration);
+            .AddStorageServices(configuration)
+            .AddSecretManagerServices(configuration);
+
+        return services;
+    }
+
+    private static IServiceCollection AddSecretManagerServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<SecretManagerOption>(configuration.GetSection(SecretManagerOption.Key));
+        services.AddSingleton<ISecretProvider, GoogleSecretManagerProvider>();
+
+        // RESOLVE GOOGLE CREDENTIAL FROM SECRET MANAGER AT STARTUP (SINGLETON)
+        services.AddSingleton(sp =>
+        {
+            var secretProvider = sp.GetRequiredService<ISecretProvider>();
+            var options = sp.GetRequiredService<IOptions<SecretManagerOption>>().Value;
+            var json = secretProvider.GetSecretAsync(options.ServiceAccountSecretName).GetAwaiter().GetResult();
+            return CredentialFactory.FromJson<ServiceAccountCredential>(json).ToGoogleCredential();
+        });
 
         return services;
     }

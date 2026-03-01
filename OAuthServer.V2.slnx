@@ -1,4 +1,10 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="notes.txt" />
+  </Folder>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
   <Project Path="OAuthServer.V2.API/OAuthServer.V2.API.csproj" />
   <Project Path="OAuthServer.V2.Core/OAuthServer.V2.Core.csproj" />
   <Project Path="OAuthServer.V2.Data/OAuthServer.V2.Data.csproj" />

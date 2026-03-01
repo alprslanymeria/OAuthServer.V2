@@ -1,0 +1,99 @@
+services:
+  oauthserver.v2.api:
+    image: ${DOCKER_REGISTRY-}oauthserverapi
+    build:
+      context: .
+      dockerfile: OAuthServer.V2.API/Dockerfile
+      target: final
+    ports:
+      - "${API_PORT:-44343}:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_URLS=http://+:8080
+      # FIDO2 / PASSKEYS
+      - Fido2__ServerDomain=${FIDO2_SERVER_DOMAIN}
+      - Fido2__ServerName=${FIDO2_SERVER_NAME}
+      - Fido2__Origins__0=${FIDO2_ORIGIN_0}
+      # TWILIO
+      - Twilio__AccountSid=${TWILIO_ACCOUNT_SID}
+      - Twilio__AuthToken=${TWILIO_AUTH_TOKEN}
+      - Twilio__FromPhoneNumber=${TWILIO_FROM_PHONE_NUMBER}
+      # SMTP
+      - Smtp__Host=${SMTP_HOST}
+      - Smtp__Port=${SMTP_PORT}
+      - Smtp__Username=${SMTP_USERNAME}
+      - Smtp__Password=${SMTP_PASSWORD}
+      - Smtp__FromEmail=${SMTP_FROM_EMAIL}
+      - Smtp__FromName=${SMTP_FROM_NAME:-OAuthServer}
+      - Smtp__UseSsl=${SMTP_USE_SSL:-true}
+      # DATABASE
+      - ConnectionStrings__SqlServer=Data Source=sqlserver;Initial Catalog=${DB_NAME};User ID=sa;Password=${MSSQL_SA_PASSWORD};Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30
+      # TOKEN / AUTH
+      - TokenOptions__SecurityKey=${TOKEN_SECURITY_KEY}
+      - TokenOptions__Issuer=${TOKEN_ISSUER}
+      - TokenOptions__Audience__0=${TOKEN_AUDIENCE_0}
+      - TokenOptions__Audience__1=${TOKEN_AUDIENCE_1}
+      # CLIENTS
+      - Clients__0__Id=${CLIENT_MOBILE_ID}
+      - Clients__0__Secret=${CLIENT_MOBILE_SECRET}
+      - Clients__0__Audiences__0=${CLIENT_MOBILE_AUDIENCE}
+      # GOOGLE AUTHENTICATION
+      - Authentication__Google__ClientId=${GOOGLE_AUTH_CLIENT_ID}
+      - Authentication__Google__ClientSecret=${GOOGLE_AUTH_CLIENT_SECRET}
+      # GCP SECRET MANAGER
+      - GoogleSecretManager__ProjectId=${GCP_PROJECT_ID}
+      - GoogleSecretManager__CredentialBase64=${GCP_CREDENTIAL_BASE64}
+      # GOOGLE CLOUD STORAGE
+      - GoogleCloudStorage__BucketName=${GCS_BUCKET_NAME}
+      # OPENTELEMETRY
+      - OpenTelemetryOption__Enabled=${OTEL_ENABLED:-true}
+      # ALLOWED URLS
+      - AllowedRedirectUris__0=${ALLOWED_REDIRECT_URI_0}
+      - AllowedRedirectUris__1=${ALLOWED_REDIRECT_URI_1}
+      # CORS - ALLOWED ORIGINS
+      - AllowedOrigins__0=${ALLOWED_ORIGIN_0}
+      - AllowedOrigins__1=${ALLOWED_ORIGIN_1}
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  # oauthserver.v2.migrations:
+  #   image: ${DOCKER_REGISTRY-}oauthserverv2-migrations
+  #   build:
+  #     context: .
+  #     dockerfile: OAuthServer.V2.API/Dockerfile
+  #     target: migration
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Production
+  #     - ConnectionStrings__SqlServer=Server=sqlserver;Database=OAuthServer.V2;User Id=sa;Password=${MSSQL_SA_PASSWORD};Encrypt=True;TrustServerCertificate=True;
+  #   depends_on:
+  #     sqlserver:
+  #       condition: service_healthy
+  #   restart: "no"
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    ports:
+      - "${MSSQL_PORT}:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${MSSQL_SA_PASSWORD}" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sqlserver-data:

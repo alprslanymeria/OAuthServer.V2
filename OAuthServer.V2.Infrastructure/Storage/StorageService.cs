@@ -47,6 +47,9 @@ public class StorageService(
     public string GetPublicUrl(string filePath)
         => Provider.GetPublicUrl(filePath);
 
+    public string ExtractFilePath(string fileUrl)
+        => Provider.ExtractFilePath(fileUrl);
+
     public Task<string> GetSignedUrlAsync(string filePath, int expirationMinutes = 60, CancellationToken cancellationToken = default)
         => Provider.GetSignedUrlAsync(filePath, expirationMinutes, cancellationToken);
 
